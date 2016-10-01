@@ -1,5 +1,3 @@
-package map;
-
 /* Copyright (C) 1995 and 1997 John D. Ramsdell
 
 This file is part of Programmer's Minesweeper (PGMS).

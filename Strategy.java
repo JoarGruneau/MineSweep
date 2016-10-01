@@ -1,4 +1,4 @@
-package map;
+
 
 /* Copyright (C) 1995 John D. Ramsdell
 
@@ -30,7 +30,7 @@ Boston, MA 02111-1307, USA.
  * @author John D. Ramsdell
  */
 public interface Strategy {
-
+    
   /**
    * Plays a game of mine sweeper.
    * @param m		the map of mines

@@ -1,4 +1,3 @@
-package map;
 
 /* Copyright (C) 1997 John D. Ramsdell
 

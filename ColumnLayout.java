@@ -1,4 +1,3 @@
-package map;
 
 import java.awt.*;
 

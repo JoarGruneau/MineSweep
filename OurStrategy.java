@@ -44,6 +44,16 @@ public final class OurStrategy implements Strategy {
     @Override
     public void play(Map m) {
    }
+    
+    
+    
+    /**
+ * Loops through the constraints and checks if they are satisfied: 
+ * @param vars as ArrayList
+ * @param constraints ArrayList
+ * @param sum ArrayList
+ * @return boolean
+ */
     public boolean meetsConstraints(ArrayList<Integer> vars, 
             ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> sum){
         int tmpSum;

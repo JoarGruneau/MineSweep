@@ -65,13 +65,13 @@ public class PGMS extends Applet {
     ArrayList<ArrayList<Integer>> c=new ArrayList();;
     ArrayList<Integer> v= new ArrayList();
     ArrayList<Integer> sum=new ArrayList();
-    sum.add(2);
-    v.add(0);
-    v.add(1);
-    v.add(1);
-    c.add(v);
-    OurStrategy test=new OurStrategy();
-    System.out.println(test.meetsConstraints(v,c,sum));
+    //sum.add(2);
+    //v.add(0);
+    //v.add(1);
+    //v.add(1);
+    //c.add(v);
+    //OurStrategy test=new OurStrategy();
+    //System.out.println(test.meetsConstraints(v,c,sum));
     
 
     String strategy_name = default_strategy_name;

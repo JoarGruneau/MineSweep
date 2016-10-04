@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.applet.Applet;
+import java.util.ArrayList;
 
 /* Copyright (C) 1995 and 1997 John D. Ramsdell
 
@@ -36,7 +37,7 @@ Boston, MA 02111-1307, USA.
  */
 public class PGMS extends Applet {
   // The default strategy
-  private static String default_strategy_name = "SinglePointStrategy";
+  private static String default_strategy_name = "OurStrategy";
   Strategy s;			// The selected strategy
   int mines = 10;		// Beginner game
   int rows = 8;
@@ -61,6 +62,18 @@ public class PGMS extends Applet {
    * </dl>
    */
   public static void main(String args[]) {
+    ArrayList<ArrayList<Integer>> c=new ArrayList();;
+    ArrayList<Integer> v= new ArrayList();
+    ArrayList<Integer> sum=new ArrayList();
+    sum.add(2);
+    v.add(0);
+    v.add(1);
+    v.add(1);
+    c.add(v);
+    OurStrategy test=new OurStrategy();
+    System.out.println(test.meetsConstraints(v,c,sum));
+    
+
     String strategy_name = default_strategy_name;
     String game_name = "beginner";
     int mines = 10;		// Beginner game

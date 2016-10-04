@@ -1,4 +1,7 @@
 
+import java.util.ArrayList;
+
+
 
 /* Copyright (C) 1995 John D. Ramsdell
 
@@ -37,18 +40,22 @@ Boston, MA 02111-1307, USA.
  * @version October 1995
  * @author John D. Ramsdell
  */
-public final class SinglePointStrategy implements Strategy {
-      public void play(Map m) {
-    for (;;) {
-      int y = m.pick(m.rows());
-      int x = m.pick(m.columns());
-      int q = m.probe(x, y);	// Guess a point to be probed
-      if (Map.BOOM == q)	// Opps! Bad guess
-	return;
-      else if (q >= 0) {
-	if (m.done())
-	  return;		// We win!
-      }
+public final class OurStrategy implements Strategy {
+    @Override
+    public void play(Map m) {
+   }
+    public boolean meetsConstraints(ArrayList<Integer> vars, 
+            ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> sum){
+        int tmpSum;
+        for(int index=0;index<constraints.size();index++){
+            tmpSum=0;
+            for(int var:constraints.get(index)){
+                tmpSum+=vars.get(var);
+            }
+            if(tmpSum!=sum.get(index)){
+                return false;
+            }
+        }
+        return true;
     }
-  }
 }

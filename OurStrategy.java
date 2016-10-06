@@ -51,15 +51,17 @@ public final class OurStrategy implements Strategy {
 
     @Override    
     public void play(Map m) {
+        System.out.println("New game!");
     	rows = m.rows();
     	cols = m.columns();
         // If map has not been probed yet, probe somewhere in the middle.
     	if(!m.probed()){
-    		m.probe(Math.round(rows/2), Math.round(cols/2));
+    		//m.probe(Math.round(rows/2), Math.round(cols/2));
+            m.probe(0,0);
     	}
 
         int safeCounter = 0;
-        while(!m.done() && safeCounter<1000){
+        while(!m.done() && safeCounter<10000){
 
             probeMap(m);
             safeCounter++;
@@ -135,7 +137,7 @@ public final class OurStrategy implements Strategy {
                         markedNeighborCells = findNeighborCells(m, row, col, MARKED);
                         /* If number in cell is greater than the nr of marked neighbors we can
                         add a new constraint*/
-                        if(currentCell > markedNeighborCells.size()){
+                        if(currentCell >= markedNeighborCells.size()){
                             constraint = new ArrayList<>();
                             for(Cell cell:unprobedNeighborCells){
                                 for(Cell fringeCell:fringeCells){
@@ -217,7 +219,8 @@ public final class OurStrategy implements Strategy {
                 // Maybe check maxNr/solutions.size() and do random guess sometimes
                 Cell safestCell = fringeCells.get(maxIdx);
                 m.probe(safestCell.row, safestCell.col);
-                System.out.println("MAKING GUESS!");
+                String printstr = "GUESSING ON ("+safestCell.row+","+safestCell.col+")";
+                System.out.println(printstr);
             }
 
 
@@ -272,7 +275,7 @@ public final class OurStrategy implements Strategy {
 
         ArrayList<Integer> nextAssignment;
         for(int i=0; i<2; i++){
-            nextAssignment = copyList(fringeAssignment);
+            nextAssignment = new ArrayList<Integer>(fringeAssignment);
             nextAssignment.set(index, i);
             /*if(!meetsConstraints(nextAssignment, constraints, constraintSums)){
                 return;
@@ -280,14 +283,6 @@ public final class OurStrategy implements Strategy {
             cspSolver(nextAssignment, constraints, constraintSums, solutions, index+1);
         }
 
-    }
-
-    public ArrayList<Integer> copyList(ArrayList<Integer> inList){
-        ArrayList<Integer> returnList = new ArrayList<Integer>();
-        for(Integer elem:inList){
-            returnList.add(elem);
-        }
-        return returnList;
     }
     
     /**

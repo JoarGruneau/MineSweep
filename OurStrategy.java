@@ -1,3 +1,4 @@
+package edwinmicke;
 
 import java.util.*;
 
@@ -59,21 +60,25 @@ public final class OurStrategy implements Strategy {
     	}
 
         int safeCounter = 0;
+        boolean probedOrMarked;
         while(!m.done() && safeCounter<100){
-
-            probeMap(m);
+            // m.display(); //maybe this is needed to make map show, dont know yet
+            probedOrMarked = probeMap(m);
+            if(!probedOrMarked){
+                // This means we have no new information from probeMap
+                // We have to make a guess here
+            }
             safeCounter++;
         }
         
     	
    }
 
-    public void probeMap(Map m){
+    public boolean probeMap(Map m){
     	
     	// NOTE: THIS IS TOTALLY UNTESTED ATM
         // Loop through map, find constraint cells and fringe cells
-        // If no consistent solutions, makes a guess.
-        // This should maybe be split into several functions at this point..
+        // Returns true if a cell was probed or marked, false if nothing was done
 
         /* Variable descriptions
          - fringeCells and unassignedFringes:
@@ -109,7 +114,7 @@ public final class OurStrategy implements Strategy {
                         for(Cell cell:unprobedNeighborCells){
                             m.probe(cell.row, cell.col);
                         }
-                        return;
+                        return true;
                     }
                 }
                 /* If the cell has neighbor mines, find all the neighbor fringe cells
@@ -158,19 +163,18 @@ public final class OurStrategy implements Strategy {
                 }
             }
         }
-        System.out.println(fringeCells.size());
-        for(Cell test:fringeCells){
-            String prntstr = test.row+" "+test.col;
-            System.out.println(prntstr);
-        }
+//        System.out.println(fringeCells.size());
+//        for(Cell test:fringeCells){
+//            String prntstr = test.row+" "+test.col;
+//            System.out.println(prntstr);
+//        }
         /* Now that we have all constraints and fringe cells, call the CSP solver and get
         all possible solutions back
         */
-        ArrayList<ArrayList<Integer>> solutions = cspSolver(unassignedFringes, constraints, constraintSums);
+        ArrayList<ArrayList<Integer>> test = new ArrayList<ArrayList<Integer>>();
+        ArrayList<ArrayList<Integer>> solutions = cspSolver(unassignedFringes, constraints, constraintSums, test, 0);
         /*Now loop over the fringe cells and probe/flag all solved cells*/
         boolean probedOrMarked = false; // Return value of function
-        // nrSafeCells counts nr of safe returns for each fringe cell, used to make guess
-        int[] nrSafeCells = new int[fringeCells.size()]; 
         if(solutions.size() != 0){
             boolean isMine;
             boolean isSafe;
@@ -181,18 +185,16 @@ public final class OurStrategy implements Strategy {
                 isSafe = true;
                 fringeCell = fringeCells.get(idx);
                 for(ArrayList<Integer> solution:solutions){
-                    if(solution.get(idx) != 1){ // Is safe
+                    if(solution.get(idx) != 1){
                         isMine = false;
-                        nrSafeCells[idx] += 1;
-                    }else if(solution.get(idx) != 0){ // Is mine
+                    }else if(solution.get(idx) != 0){
                         isSafe = false;
                     }
-                    /*if(!isMine && !isSafe){
-                        // It's not a mine in every solution and it's not
-                        // safe in every solution, so we can break
-                        // THIS SHOULDNT BREAK IF WE COUNT NR SAFE CELLS
+                    if(!isMine && !isSafe){
+                        /* It's not a mine in every solution and it's not
+                        safe in every solution, so we can break*/
                         break;
-                    }*/
+                    }
                 }
                 if(isMine){
                     m.mark(fringeCell.row, fringeCell.col);
@@ -204,38 +206,7 @@ public final class OurStrategy implements Strategy {
             }
         }
 
-
-        // Nothing was probed or marked, we need to make a guess...
-        if(!probedOrMarked){
-            if(solutions.size() != 0){
-                int maxNr = 0;
-                int maxIdx = 0;
-                // Find safest fringe cell
-                for(int idx = 0; idx<nrSafeCells.length; idx++){
-                    if(nrSafeCells[idx] > maxNr){
-                        maxNr = nrSafeCells[idx];
-                        maxIdx = idx;
-                    }
-                }
-                // if all fringe cells are mines, this will faily horribly...
-                // Maybe check maxNr/solutions.size() and do random guess sometimes
-                Cell safestCell = fringeCells.get(maxIdx);
-                m.probe(safestCell.row, safestCell.col);
-            }
-
-
-
-            /*for(ArrayList<Integer> cons:constraints ){
-                String printstr = "";
-                for(Integer idx:cons){
-                    printstr += "("+fringeCells.get(idx).row +","+fringeCells.get(idx).col+") ";
-                }
-                printstr += "= " + constraintSums.get(constraints.indexOf(cons));
-                System.out.println(printstr);
-            }
-            System.out.println("");*/
-
-        }
+        return probedOrMarked;
 
     }
 
@@ -260,19 +231,48 @@ public final class OurStrategy implements Strategy {
         return returnList;
     }
     
+//    public ArrayList<ArrayList<Integer>> transform(ArrayList<Integer> al){
+//    	
+//    	ArrayList<ArrayList<Integer>> results = new ArrayList<ArrayList<Integer>>();
+//    	
+//    	
+//    	for(int i = 0; i < al.size(); i++){
+//    		int r = 0;
+//        	if(al.get(i) == 0) r = 1;
+//        	
+//    		al.set(i, 0);
+//    	}
+//    	
+//    	
+//    	al.set(1, 5);
+//    
+//    	return results;
+//    }
+        
+    
     public ArrayList<ArrayList<Integer>> cspSolver(ArrayList<Integer> fringeAssignment, 
-            ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> constraintSums){
+            ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> constraintSums, 
+            ArrayList<ArrayList<Integer>> solutions, int index){
+        
 
+        if(fringeAssignment.get(fringeAssignment.size()-1) != -1){
+            if(meetsConstraints(fringeAssignment, solutions, constraintSums)){
+                solutions.add(fringeAssignment);
+            }
+            return solutions;
+        }
 
-        ArrayList<ArrayList<Integer>> solutions = new ArrayList<>();
-        /*
-        Step 1: Do DFS and stuff here
-        Step 2: ???
-        Step 3: profit!
-        */
-
+        ArrayList<Integer> nextAssignment;
+        for(int i = 0; i < 2; i++){
+        	nextAssignment = new ArrayList<>(fringeAssignment);
+            nextAssignment.set(index, i);
+            cspSolver(nextAssignment, constraints, constraintSums, solutions, index+1);
+        }
         return solutions;
     }
+    
+    
+    
     
     
     /**

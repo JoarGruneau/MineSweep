@@ -59,7 +59,7 @@ public final class OurStrategy implements Strategy {
     	}
 
         int safeCounter = 0;
-        while(!m.done() && safeCounter<100){
+        while(!m.done() && safeCounter<1000){
 
             probeMap(m);
             safeCounter++;
@@ -158,15 +158,11 @@ public final class OurStrategy implements Strategy {
                 }
             }
         }
-        System.out.println(fringeCells.size());
-        for(Cell test:fringeCells){
-            String prntstr = test.row+" "+test.col;
-            System.out.println(prntstr);
-        }
         /* Now that we have all constraints and fringe cells, call the CSP solver and get
         all possible solutions back
         */
-        ArrayList<ArrayList<Integer>> solutions = cspSolver(unassignedFringes, constraints, constraintSums);
+        ArrayList<ArrayList<Integer>> solutions = new ArrayList<ArrayList<Integer>>();
+        cspSolver(unassignedFringes, constraints, constraintSums, solutions, 0);
         /*Now loop over the fringe cells and probe/flag all solved cells*/
         boolean probedOrMarked = false; // Return value of function
         // nrSafeCells counts nr of safe returns for each fringe cell, used to make guess
@@ -221,6 +217,7 @@ public final class OurStrategy implements Strategy {
                 // Maybe check maxNr/solutions.size() and do random guess sometimes
                 Cell safestCell = fringeCells.get(maxIdx);
                 m.probe(safestCell.row, safestCell.col);
+                System.out.println("MAKING GUESS!");
             }
 
 
@@ -260,20 +257,38 @@ public final class OurStrategy implements Strategy {
         return returnList;
     }
     
-    public ArrayList<ArrayList<Integer>> cspSolver(ArrayList<Integer> fringeAssignment, 
-            ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> constraintSums){
 
+    public void cspSolver(ArrayList<Integer> fringeAssignment, 
+            ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> constraintSums, 
+            ArrayList<ArrayList<Integer>> solutions, int index){
+        
+        // Base case
+        if(fringeAssignment.get(fringeAssignment.size()-1) != -1){
+            if(meetsConstraints(fringeAssignment, constraints, constraintSums)){
+                solutions.add(fringeAssignment);
+            }
+            return;
+        }
 
-        ArrayList<ArrayList<Integer>> solutions = new ArrayList<>();
-        /*
-        Step 1: Do DFS and stuff here
-        Step 2: ???
-        Step 3: profit!
-        */
+        ArrayList<Integer> nextAssignment;
+        for(int i=0; i<2; i++){
+            nextAssignment = copyList(fringeAssignment);
+            nextAssignment.set(index, i);
+            /*if(!meetsConstraints(nextAssignment, constraints, constraintSums)){
+                return;
+            }*/
+            cspSolver(nextAssignment, constraints, constraintSums, solutions, index+1);
+        }
 
-        return solutions;
     }
-    
+
+    public ArrayList<Integer> copyList(ArrayList<Integer> inList){
+        ArrayList<Integer> returnList = new ArrayList<Integer>();
+        for(Integer elem:inList){
+            returnList.add(elem);
+        }
+        return returnList;
+    }
     
     /**
  * Loops through the constraints and checks if they are satisfied: 

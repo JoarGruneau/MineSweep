@@ -59,19 +59,39 @@ public final class OurStrategy implements Strategy {
     	}
 
         int safeCounter = 0;
+        boolean probedOrMarked;
         while(!m.done() && safeCounter<100){
             // m.display(); //maybe this is needed to make map show, dont know yet
-            probeMap(m);
+            probedOrMarked = probeMap(m);
+            if(!probedOrMarked){
+                // This means we have no new information from probeMap
+                // We have to make a guess here
+            }
             safeCounter++;
         }
         
     	
    }
 
-    public void probeMap(Map m){
+    public boolean probeMap(Map m){
     	
     	// NOTE: THIS IS TOTALLY UNTESTED ATM
         // Loop through map, find constraint cells and fringe cells
+        // Returns true if a cell was probed or marked, false if nothing was done
+
+        /* Variable descriptions
+         - fringeCells and unassignedFringes:
+        The indices of the fringe cells correspond to the indices of
+        the unassigned fringe cells
+         - constraints and constraintSums:
+        Each array in constraints is a constraint. Each element in 
+        each constraint array is an index corresponding to the index in the
+        fringe cells array. 
+        The index of each constraint corresponds to the index of each sum 
+        in the constraintSums array.
+        */
+
+
         int currentCell;
         ArrayList<Cell> unprobedNeighborCells;
         ArrayList<Cell> markedNeighborCells;
@@ -80,32 +100,38 @@ public final class OurStrategy implements Strategy {
         ArrayList<Integer> constraint;
         ArrayList<ArrayList<Integer>> constraints = new ArrayList<ArrayList<Integer>>();
         ArrayList<Integer> constraintSums = new ArrayList<Integer>();
+        boolean newFringeCell;
 
         for(int row = 0; row<rows; row++){
             for(int col = 0; col<cols; col++){
                 currentCell = m.look(row,col);
+                
                 // If cell has no mines around, probe all unprobed neighbor cells
                 if(currentCell == 0){
                     unprobedNeighborCells = findNeighborCells(m, row, col, UNPROBED);
                     if(unprobedNeighborCells.size() != 0){
-                        /* If some neighbor cells are unprobed, probe all and return*/
                         for(Cell cell:unprobedNeighborCells){
                             m.probe(cell.row, cell.col);
                         }
-                        return;
+                        return true;
                     }
                 }
                 /* If the cell has neighbor mines, find all the neighbor fringe cells
-                and save them. Also save the cell as ConstraintCell*/
+                and save them. Also save the constraints*/
                 else if(currentCell > 0){
                     unprobedNeighborCells = findNeighborCells(m, row, col, UNPROBED);
-                    // Check each cell if already in fringe list, add fringes
+                    // Check each cell if already in fringe list, if not to list
                     for(Cell cell:unprobedNeighborCells){
+                        newFringeCell = true;
                         for(Cell fringeCell:fringeCells){
                             if(fringeCell.equals(cell)){
-                                fringeCells.add(cell);
-                                unassignedFringes.add(-1);
+                                newFringeCell = false;
+                                break;
                             }
+                        }
+                        if(newFringeCell){
+                            fringeCells.add(cell);
+                            unassignedFringes.add(-1);
                         }
                     }
                     // Find and add constraints
@@ -117,7 +143,10 @@ public final class OurStrategy implements Strategy {
                             constraint = new ArrayList<Integer>();
                             for(Cell cell:unprobedNeighborCells){
                                 for(Cell fringeCell:fringeCells){
-                                    // Finds the index of the current cell in the fringeCells
+                                    /* Finds the index of the current cell in the fringeCells
+                                    This doesn't crash because of the loops above:
+                                    fringeCells are scanned and found around each numbered cell.
+                                    */
                                     if(cell.equals(fringeCell)){
                                         constraint.add(fringeCells.indexOf(fringeCell));
                                         // Index is same as in unassignedFringes
@@ -138,6 +167,38 @@ public final class OurStrategy implements Strategy {
         all possible solutions back
         */
         ArrayList<ArrayList<Integer>> solutions = cspSolver(unassignedFringes, constraints, constraintSums);
+        /*Now loop over the fringe cells and probe/flag all solved cells*/
+        boolean probedOrMarked = false; // Return value of function
+        boolean isMine;
+        boolean isSafe;
+        Cell fringeCell;
+        for(int idx = 0; idx < fringeCells.size(); idx++){
+            //Check if safe/mine in every solution
+            isMine = true;
+            isSafe = true;
+            fringeCell = fringeCells.get(idx);
+            for(ArrayList<Integer> solution:solutions){
+                if(solution.get(idx) != 1){
+                    isMine = false;
+                }else if(solution.get(idx) != 0){
+                    isSafe = false;
+                }
+                if(!isMine && !isSafe){
+                    /* It's not a mine in every solution and it's not
+                    safe in every solution, so we can break*/
+                    break;
+                }
+            }
+            if(isMine){
+                m.mark(fringeCell.row, fringeCell.col);
+                probedOrMarked = true;
+            }else if(isSafe){
+                m.probe(fringeCell.row, fringeCell.col);
+                probedOrMarked = true;
+            }
+        }
+
+        return probedOrMarked;
 
     }
 

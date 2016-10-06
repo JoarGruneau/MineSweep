@@ -95,11 +95,11 @@ public final class OurStrategy implements Strategy {
         int currentCell;
         ArrayList<Cell> unprobedNeighborCells;
         ArrayList<Cell> markedNeighborCells;
-        ArrayList<Cell> fringeCells = new ArrayList<Cell>();
-        ArrayList<Integer> unassignedFringes = new ArrayList<Integer>();
+        ArrayList<Cell> fringeCells = new ArrayList<>();
+        ArrayList<Integer> unassignedFringes = new ArrayList<>();
         ArrayList<Integer> constraint;
-        ArrayList<ArrayList<Integer>> constraints = new ArrayList<ArrayList<Integer>>();
-        ArrayList<Integer> constraintSums = new ArrayList<Integer>();
+        ArrayList<ArrayList<Integer>> constraints = new ArrayList<>();
+        ArrayList<Integer> constraintSums = new ArrayList<>();
         boolean newFringeCell;
 
         for(int row = 0; row<rows; row++){
@@ -140,7 +140,7 @@ public final class OurStrategy implements Strategy {
                         /* If number in cell is greater than the nr of marked neighbors we can
                         add a new constraint*/
                         if(currentCell > markedNeighborCells.size()){
-                            constraint = new ArrayList<Integer>();
+                            constraint = new ArrayList<>();
                             for(Cell cell:unprobedNeighborCells){
                                 for(Cell fringeCell:fringeCells){
                                     /* Finds the index of the current cell in the fringeCells
@@ -162,7 +162,11 @@ public final class OurStrategy implements Strategy {
                 }
             }
         }
-
+        System.out.println(fringeCells.size());
+        for(Cell test:fringeCells){
+            String prntstr = test.row+" "+test.col;
+            System.out.println(prntstr);
+        }
         /* Now that we have all constraints and fringe cells, call the CSP solver and get
         all possible solutions back
         */
@@ -229,7 +233,7 @@ public final class OurStrategy implements Strategy {
             ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> constraintSums){
 
 
-        ArrayList<ArrayList<Integer>> solutions = new ArrayList<ArrayList<Integer>>();
+        ArrayList<ArrayList<Integer>> solutions = new ArrayList<>();
         /*
         Step 1: Do DFS and stuff here
         Step 2: ???
@@ -250,12 +254,28 @@ public final class OurStrategy implements Strategy {
     public boolean meetsConstraints(ArrayList<Integer> vars, 
             ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> sum){
         int tmpSum;
+        boolean partialTest;
+        int unnasigned;
         for(int index=0;index<constraints.size();index++){
             tmpSum=0;
+            partialTest=false;
+            unnasigned=0;
             for(int var:constraints.get(index)){
-                tmpSum+=vars.get(var);
+                if(vars.get(var)==-1){
+                    partialTest=true;
+                    unnasigned++;
+                }
+                else{
+                    tmpSum+=vars.get(var);
+                }
             }
-            if(tmpSum!=sum.get(index)){
+            if(partialTest==false && tmpSum!=sum.get(index)){
+                return false;
+            }
+            else if(partialTest &&  tmpSum>sum.get(index)){
+                return false;
+            }
+            else if( partialTest && tmpSum+unnasigned<sum.get(index)){
                 return false;
             }
         }

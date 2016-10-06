@@ -169,32 +169,34 @@ public final class OurStrategy implements Strategy {
         ArrayList<ArrayList<Integer>> solutions = cspSolver(unassignedFringes, constraints, constraintSums);
         /*Now loop over the fringe cells and probe/flag all solved cells*/
         boolean probedOrMarked = false; // Return value of function
-        boolean isMine;
-        boolean isSafe;
-        Cell fringeCell;
-        for(int idx = 0; idx < fringeCells.size(); idx++){
-            //Check if safe/mine in every solution
-            isMine = true;
-            isSafe = true;
-            fringeCell = fringeCells.get(idx);
-            for(ArrayList<Integer> solution:solutions){
-                if(solution.get(idx) != 1){
-                    isMine = false;
-                }else if(solution.get(idx) != 0){
-                    isSafe = false;
+        if(solutions.size() != 0){
+            boolean isMine;
+            boolean isSafe;
+            Cell fringeCell;
+            for(int idx = 0; idx < fringeCells.size(); idx++){
+                //Check if safe/mine in every solution
+                isMine = true;
+                isSafe = true;
+                fringeCell = fringeCells.get(idx);
+                for(ArrayList<Integer> solution:solutions){
+                    if(solution.get(idx) != 1){
+                        isMine = false;
+                    }else if(solution.get(idx) != 0){
+                        isSafe = false;
+                    }
+                    if(!isMine && !isSafe){
+                        /* It's not a mine in every solution and it's not
+                        safe in every solution, so we can break*/
+                        break;
+                    }
                 }
-                if(!isMine && !isSafe){
-                    /* It's not a mine in every solution and it's not
-                    safe in every solution, so we can break*/
-                    break;
+                if(isMine){
+                    m.mark(fringeCell.row, fringeCell.col);
+                    probedOrMarked = true;
+                }else if(isSafe){
+                    m.probe(fringeCell.row, fringeCell.col);
+                    probedOrMarked = true;
                 }
-            }
-            if(isMine){
-                m.mark(fringeCell.row, fringeCell.col);
-                probedOrMarked = true;
-            }else if(isSafe){
-                m.probe(fringeCell.row, fringeCell.col);
-                probedOrMarked = true;
             }
         }
 

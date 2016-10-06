@@ -52,13 +52,13 @@ public final class OurStrategy implements Strategy {
     @Override    
     public void play(Map m) {
         System.out.println("New game!");
-    	rows = m.rows();
-    	cols = m.columns();
+        rows = m.rows();
+        cols = m.columns();
         // If map has not been probed yet, probe somewhere in the middle.
-    	if(!m.probed()){
-    		//m.probe(Math.round(rows/2), Math.round(cols/2));
+        if(!m.probed()){
+            //m.probe(Math.round(rows/2), Math.round(cols/2));
             m.probe(0,0);
-    	}
+        }
 
         int safeCounter = 0;
         while(!m.done() && safeCounter<10000){
@@ -67,12 +67,12 @@ public final class OurStrategy implements Strategy {
             safeCounter++;
         }
         
-    	
+        
    }
 
     public void probeMap(Map m){
-    	
-    	// NOTE: THIS IS TOTALLY UNTESTED ATM
+        
+        // NOTE: THIS IS TOTALLY UNTESTED ATM
         // Loop through map, find constraint cells and fringe cells
         // If no consistent solutions, makes a guess.
         // This should maybe be split into several functions at this point..

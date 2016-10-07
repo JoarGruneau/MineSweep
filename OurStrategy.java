@@ -174,7 +174,7 @@ public final class OurStrategy implements Strategy {
         all possible solutions back
         */
         ArrayList<ArrayList<Integer>> solutions = new ArrayList<ArrayList<Integer>>();
-        cspSolver(unassignedFringes, constraints, constraintSums, solutions, 0);
+        cspSolver(unassignedFringes, constraints, constraintSums, solutions, 0,0, m);
         /*Now loop over the fringe cells and probe/flag all solved cells*/
         boolean probedOrMarked = false; // Return value of function
         // nrSafeCells counts nr of safe returns for each fringe cell, used to make guess
@@ -274,8 +274,8 @@ public final class OurStrategy implements Strategy {
 
     public void cspSolver(ArrayList<Integer> fringeAssignment, 
             ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> constraintSums, 
-            ArrayList<ArrayList<Integer>> solutions, int index){
-        
+            ArrayList<ArrayList<Integer>> solutions, int index, 
+            int assignedMines, Map m){
         // Base case
         if(fringeAssignment.get(fringeAssignment.size()-1) != -1){
             if(meetsConstraints(fringeAssignment, constraints, constraintSums)){
@@ -286,12 +286,14 @@ public final class OurStrategy implements Strategy {
 
         ArrayList<Integer> nextAssignment;
         for(int i=0; i<2; i++){
-            nextAssignment = new ArrayList<Integer>(fringeAssignment);
+            nextAssignment = new ArrayList<>(fringeAssignment);
             nextAssignment.set(index, i);
-            if(!meetsConstraints(nextAssignment, constraints, constraintSums)){
+            if(!meetsConstraints(nextAssignment, constraints, constraintSums) &&
+                    assignedMines<=m.mines_minus_marks()){
                 continue;
             }
-            cspSolver(nextAssignment, constraints, constraintSums, solutions, index+1);
+            cspSolver(nextAssignment, constraints, constraintSums, 
+                    solutions, index+1, assignedMines+i, m);
         }
 
     }
@@ -334,6 +336,7 @@ public final class OurStrategy implements Strategy {
         return true;
     }
 }
+
 
 
 class Cell{

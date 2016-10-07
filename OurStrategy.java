@@ -98,15 +98,17 @@ public final class OurStrategy implements Strategy {
         ArrayList<Integer> constraint;
         ArrayList<ArrayList<Integer>> constraints = new ArrayList<>();
         ArrayList<Integer> constraintSums = new ArrayList<>();
+        ArrayList<Cell> allUnprobedcells = new ArrayList<Cell>();
         boolean newFringeCell;
 
         for(int x = 0; x<cols; x++){
             for(int y = 0; y<rows; y++){
                 currentCell = m.look(x,y);
-                /*if(currentCell == OUT_OF_BOUNDS){
-                    System.out.println("ERROR");
-                    //return;
-                }*/
+
+                // Save all unprobed cells
+                if(currentCell == UNPROBED){
+                    allUnprobedcells.add(new Cell(x,y,currentCell));
+                }
                 
                 // If cell has no mines around, probe all unprobed neighbor cells
                 if(currentCell == 0){
@@ -167,14 +169,18 @@ public final class OurStrategy implements Strategy {
 
         if(fringeCells.size() == 0){
             // No fringe! Can happen if you click bottom and mark all cells around you.
-            // MAKE GUESS HERE AND RETURN, RIGHT NOW IT CAUSES ERROR
+            Cell safestCell = getRandomCell(allUnprobedcells);
+            m.probe(safestCell.x, safestCell.y);
+            System.out.println("No fringe cells, probing random!");
+            return;
         }
 
         /* Now that we have all constraints and fringe cells, call the CSP solver and get
         all possible solutions back
         */
+        int nrMinesLeft = m.mines_minus_marks();
         ArrayList<ArrayList<Integer>> solutions = new ArrayList<ArrayList<Integer>>();
-        cspSolver(unassignedFringes, constraints, constraintSums, solutions, 0);
+        cspSolver(unassignedFringes, constraints, constraintSums, solutions, 0, nrMinesLeft);
         /*Now loop over the fringe cells and probe/flag all solved cells*/
         boolean probedOrMarked = false; // Return value of function
         // nrSafeCells counts nr of safe returns for each fringe cell, used to make guess
@@ -195,12 +201,6 @@ public final class OurStrategy implements Strategy {
                     }else if(solution.get(idx) != 0){ // Is mine
                         isSafe = false;
                     }
-                    /*if(!isMine && !isSafe){
-                        // It's not a mine in every solution and it's not
-                        // safe in every solution, so we can break
-                        // THIS SHOULDNT BREAK IF WE COUNT NR SAFE CELLS
-                        break;
-                    }*/
                 }
                 if(isMine){
                     m.mark(fringeCell.x, fringeCell.y);
@@ -227,11 +227,22 @@ public final class OurStrategy implements Strategy {
                 }
                 // if all fringe cells are mines, this will faily horribly...
                 // Maybe check maxNr/solutions.size() and do random guess sometimes
-                Cell safestCell = fringeCells.get(maxIdx);
-                m.probe(safestCell.x, safestCell.y);
-                String printstr = "GUESSING ON ("+safestCell.x+","+safestCell.y+
-                    ") with confidence "+(double)maxNr/solutions.size();
+                double randomProb = 1.0-(double)nrMinesLeft/allUnprobedcells.size();
+                double bestFringeProb = (double)maxNr/solutions.size();
+                String printstr = "";
+                Cell safestCell;
+                if(randomProb > bestFringeProb){
+                    safestCell = getRandomCell(allUnprobedcells);
+                    printstr = "Guessing RANDOM on ("+safestCell.x+","+safestCell.y+
+                    ") with confidence "+randomProb;
+                }else{
+                    safestCell = fringeCells.get(maxIdx);
+                    printstr = "Guessing on ("+safestCell.x+","+safestCell.y+
+                    ") with confidence "+bestFringeProb;
+                }
                 System.out.println(printstr);
+                m.probe(safestCell.x, safestCell.y);
+                return;
             }
 
 
@@ -274,11 +285,11 @@ public final class OurStrategy implements Strategy {
 
     public void cspSolver(ArrayList<Integer> fringeAssignment, 
             ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> constraintSums, 
-            ArrayList<ArrayList<Integer>> solutions, int index){
+            ArrayList<ArrayList<Integer>> solutions, int index, int nrMinesLeft){
         
         // Base case
         if(fringeAssignment.get(fringeAssignment.size()-1) != -1){
-            if(meetsConstraints(fringeAssignment, constraints, constraintSums)){
+            if(meetsConstraints(fringeAssignment, constraints, constraintSums, nrMinesLeft)){
                 solutions.add(fringeAssignment);
             }
             return;
@@ -288,10 +299,10 @@ public final class OurStrategy implements Strategy {
         for(int i=0; i<2; i++){
             nextAssignment = new ArrayList<Integer>(fringeAssignment);
             nextAssignment.set(index, i);
-            if(!meetsConstraints(nextAssignment, constraints, constraintSums)){
-                continue;
+            if(meetsConstraints(nextAssignment, constraints, constraintSums, nrMinesLeft)){
+                // Only go deeper if current assignment does not break constraints
+                cspSolver(nextAssignment, constraints, constraintSums, solutions, index+1, nrMinesLeft);
             }
-            cspSolver(nextAssignment, constraints, constraintSums, solutions, index+1);
         }
 
     }
@@ -304,7 +315,21 @@ public final class OurStrategy implements Strategy {
  * @return boolean
  */
     public boolean meetsConstraints(ArrayList<Integer> vars, 
-            ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> sum){
+            ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> sum,
+            int nrMinesLeft){
+
+        // First check if nr of mines left is not violated
+        int minesAssigned = 0;
+        for(Integer assignment:vars){
+            if(assignment == 1){
+                minesAssigned += 1;
+            }
+        }
+        if(minesAssigned > nrMinesLeft){
+            return false;
+        }
+
+
         int tmpSum;
         boolean partialTest;
         int unnasigned;
@@ -333,6 +358,24 @@ public final class OurStrategy implements Strategy {
         }
         return true;
     }
+
+    public Cell getRandomCell(ArrayList<Cell> cellList){
+
+        // Try corners first
+        int[][] cornerCoords = {{0,0},{0,rows-1},{cols-1,0},{cols-1,rows-1}};
+        for(int[] coords:cornerCoords){
+            for(Cell currentCell:cellList){
+                if(currentCell.x == coords[0] && currentCell.y == coords[1]){
+                    return currentCell;
+                }
+            }
+        }
+
+        // No corner cell is unprobed, return completely random
+        return cellList.get(new Random().nextInt(cellList.size()));
+
+    }
+
 }
 
 

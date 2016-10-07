@@ -288,12 +288,11 @@ public final class OurStrategy implements Strategy {
         for(int i=0; i<2; i++){
             nextAssignment = new ArrayList<>(fringeAssignment);
             nextAssignment.set(index, i);
-            if(!meetsConstraints(nextAssignment, constraints, constraintSums) &&
+            if(meetsConstraints(nextAssignment, constraints, constraintSums) &&
                     assignedMines<=m.mines_minus_marks()){
-                continue;
-            }
-            cspSolver(nextAssignment, constraints, constraintSums, 
+                cspSolver(nextAssignment, constraints, constraintSums, 
                     solutions, index+1, assignedMines+i, m);
+            }
         }
 
     }

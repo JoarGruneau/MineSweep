@@ -56,7 +56,7 @@ public final class OurStrategy implements Strategy {
         cols = m.columns();
         // If map has not been probed yet, probe somewhere in the middle.
         if(!m.probed()){
-            //m.probe(Math.round(rows/2), Math.round(cols/2));
+            //m.probe(Math.round(cols/2), Math.round(rows/2));
             m.probe(0,0);
         }
 
@@ -100,16 +100,20 @@ public final class OurStrategy implements Strategy {
         ArrayList<Integer> constraintSums = new ArrayList<>();
         boolean newFringeCell;
 
-        for(int row = 0; row<rows; row++){
-            for(int col = 0; col<cols; col++){
-                currentCell = m.look(row,col);
+        for(int x = 0; x<cols; x++){
+            for(int y = 0; y<rows; y++){
+                currentCell = m.look(x,y);
+                /*if(currentCell == OUT_OF_BOUNDS){
+                    System.out.println("ERROR");
+                    //return;
+                }*/
                 
                 // If cell has no mines around, probe all unprobed neighbor cells
                 if(currentCell == 0){
-                    unprobedNeighborCells = findNeighborCells(m, row, col, UNPROBED);
+                    unprobedNeighborCells = findNeighborCells(m, x, y, UNPROBED);
                     if(unprobedNeighborCells.size() != 0){
                         for(Cell cell:unprobedNeighborCells){
-                            m.probe(cell.row, cell.col);
+                            m.probe(cell.x, cell.y);
                         }
                         return;
                     }
@@ -117,7 +121,7 @@ public final class OurStrategy implements Strategy {
                 /* If the cell has neighbor mines, find all the neighbor fringe cells
                 and save them. Also save the constraints*/
                 else if(currentCell > 0){
-                    unprobedNeighborCells = findNeighborCells(m, row, col, UNPROBED);
+                    unprobedNeighborCells = findNeighborCells(m, x, y, UNPROBED);
                     // Check each cell if already in fringe list, if not to list
                     for(Cell cell:unprobedNeighborCells){
                         newFringeCell = true;
@@ -134,7 +138,7 @@ public final class OurStrategy implements Strategy {
                     }
                     // Find and add constraints
                     if(unprobedNeighborCells.size() != 0){
-                        markedNeighborCells = findNeighborCells(m, row, col, MARKED);
+                        markedNeighborCells = findNeighborCells(m, x, y, MARKED);
                         /* If number in cell is greater than the nr of marked neighbors we can
                         add a new constraint*/
                         if(currentCell >= markedNeighborCells.size()){
@@ -160,6 +164,12 @@ public final class OurStrategy implements Strategy {
                 }
             }
         }
+
+        if(fringeCells.size() == 0){
+            // No fringe! Can happen if you click bottom and mark all cells around you.
+            // MAKE GUESS HERE AND RETURN, RIGHT NOW IT CAUSES ERROR
+        }
+
         /* Now that we have all constraints and fringe cells, call the CSP solver and get
         all possible solutions back
         */
@@ -193,10 +203,10 @@ public final class OurStrategy implements Strategy {
                     }*/
                 }
                 if(isMine){
-                    m.mark(fringeCell.row, fringeCell.col);
+                    m.mark(fringeCell.x, fringeCell.y);
                     probedOrMarked = true;
                 }else if(isSafe){
-                    m.probe(fringeCell.row, fringeCell.col);
+                    m.probe(fringeCell.x, fringeCell.y);
                     probedOrMarked = true;
                 }
             }
@@ -218,8 +228,9 @@ public final class OurStrategy implements Strategy {
                 // if all fringe cells are mines, this will faily horribly...
                 // Maybe check maxNr/solutions.size() and do random guess sometimes
                 Cell safestCell = fringeCells.get(maxIdx);
-                m.probe(safestCell.row, safestCell.col);
-                String printstr = "GUESSING ON ("+safestCell.row+","+safestCell.col+")";
+                m.probe(safestCell.x, safestCell.y);
+                String printstr = "GUESSING ON ("+safestCell.x+","+safestCell.y+
+                    ") with confidence "+(double)maxNr/solutions.size();
                 System.out.println(printstr);
             }
 
@@ -228,7 +239,7 @@ public final class OurStrategy implements Strategy {
             /*for(ArrayList<Integer> cons:constraints ){
                 String printstr = "";
                 for(Integer idx:cons){
-                    printstr += "("+fringeCells.get(idx).row +","+fringeCells.get(idx).col+") ";
+                    printstr += "("+fringeCells.get(idx).x +","+fringeCells.get(idx).y+") ";
                 }
                 printstr += "= " + constraintSums.get(constraints.indexOf(cons));
                 System.out.println(printstr);
@@ -239,21 +250,21 @@ public final class OurStrategy implements Strategy {
 
     }
 
-    public ArrayList<Cell> findNeighborCells(Map m, int row, int col, int cellType){
+    public ArrayList<Cell> findNeighborCells(Map m, int x, int y, int cellType){
         /* Returns an arraylist of all cells of type cellType neighboring the cell
-        at location (row,col). if cellType == ALL_CELLS it returns all neighbors
+        at location (x,y). if cellType == ALL_CELLS it returns all neighbors
         */
         int currentCell;
         ArrayList<Cell> returnList = new ArrayList<Cell>();;
-        for(int rowFwd = -1; rowFwd<2; rowFwd++){
-            for(int colFwd = -1; colFwd<2; colFwd++){
+        for(int xFwd = -1; xFwd<2; xFwd++){
+            for(int yFwd = -1; yFwd<2; yFwd++){
                 // Skip own cell
-                if(rowFwd == 0 && colFwd == 0){
+                if(xFwd == 0 && yFwd == 0){
                     continue;
                 }
-                currentCell = m.look(row+rowFwd, col+colFwd);
+                currentCell = m.look(x+xFwd, y+yFwd);
                 if(cellType == ALL_CELLS || currentCell == cellType){
-                    returnList.add(new Cell(row+rowFwd, col+colFwd, currentCell));
+                    returnList.add(new Cell(x+xFwd, y+yFwd, currentCell));
                 }
             }
         }
@@ -277,9 +288,9 @@ public final class OurStrategy implements Strategy {
         for(int i=0; i<2; i++){
             nextAssignment = new ArrayList<Integer>(fringeAssignment);
             nextAssignment.set(index, i);
-            /*if(!meetsConstraints(nextAssignment, constraints, constraintSums)){
-                return;
-            }*/
+            if(!meetsConstraints(nextAssignment, constraints, constraintSums)){
+                continue;
+            }
             cspSolver(nextAssignment, constraints, constraintSums, solutions, index+1);
         }
 
@@ -326,19 +337,19 @@ public final class OurStrategy implements Strategy {
 
 
 class Cell{
-    public int row; // row idx of the cell
-    public int col; // col idx of the cell
+    public int x; // x idx of the cell
+    public int y; // y idx of the cell
     public int flag; // same notation as in Map (-3 ==> marked, -2 ==> unprobed etc)
 
-    public Cell(int inputRow, int inputCol, int inputFlag){
-        row = inputRow;
-        col = inputCol;
+    public Cell(int inputX, int inputy, int inputFlag){
+        x = inputX;
+        y = inputy;
         flag = inputFlag;
     }
 
     public boolean equals(Cell otherCell){
-        // returns true if row and col are the same
-        if(row == otherCell.row && col == otherCell.col){
+        // returns true if x and y are the same
+        if(x == otherCell.x && y == otherCell.y){
             return true;
         }else{
             return false;

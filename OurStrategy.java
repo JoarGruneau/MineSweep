@@ -41,6 +41,25 @@ Boston, MA 02111-1307, USA.
  * @author John D. Ramsdell
  */
 public final class OurStrategy implements Strategy {
+
+    /*  POSSIBLE IMPROVEMENTS
+        - For random guessing: estimate mean nr of mines on fringe and
+        mean nr of mines outside fringe, make better guess with this
+        information. (difficulty uncertain)
+        - Improve cspSolver by taking symmetries into account, so that
+        when a cell far outside the rest of the fringe can give no 
+        information about solutions around it you don't take that
+        constraint into account. (probably difficult)
+        - Improve guessing so that you take into account how much
+        new information you gain if you guess the correct cell, i.e.
+        if the cell is not a mine, how many new solutions will I be
+        able to find? Probably involves making a copy of the map
+        and calling cspSolver again on a the copied map
+        (probably more difficult)
+        - Forward checking and all that other stuff in pdf
+        (probably not very difficult, but possibly not very useful)
+    */
+
     public int rows;
     public int cols;
     public int ALL_CELLS = -5; // Used in the findNeighborCells function
@@ -54,17 +73,18 @@ public final class OurStrategy implements Strategy {
         System.out.println("New game!");
         rows = m.rows();
         cols = m.columns();
-        // If map has not been probed yet, probe somewhere in the middle.
+        // If map has not been probed yet, probe corner piece
         if(!m.probed()){
-            //m.probe(Math.round(cols/2), Math.round(rows/2));
             m.probe(0,0);
         }
 
-        int safeCounter = 0;
-        while(!m.done() && safeCounter<10000){
-
+        while(!m.done()){
             probeMap(m);
-            safeCounter++;
+        }
+        if(m.won()){
+            System.out.println("Game won!");
+        }else{
+            System.out.println("Game lost...");
         }
         
         
@@ -170,7 +190,8 @@ public final class OurStrategy implements Strategy {
         }
 
         if(fringeCells.size() == 0){
-            // No fringe! Can happen if you click bottom and mark all cells around you.
+            /* No fringe! Can happen for instance if you click bottom
+            and a 3 shows up and you mark all cells around you.*/
             Cell safestCell = getRandomCell(allUnprobedCells);
             m.probe(safestCell.x, safestCell.y);
             System.out.println("No fringe cells, probing random!");
@@ -205,6 +226,7 @@ public final class OurStrategy implements Strategy {
                         isSafe = false;
                     }
                 }
+                // Probe or mark the cell
                 if(isMine){
                     m.mark(fringeCell.x, fringeCell.y);
                     probedOrMarked = true;
@@ -228,8 +250,7 @@ public final class OurStrategy implements Strategy {
                         maxIdx = idx;
                     }
                 }
-                // if all fringe cells are mines, this will faily horribly...
-                // Maybe check maxNr/solutions.size() and do random guess sometimes
+                // Check if a random guess would be better
                 double randomProb = 1.0-(double)nrMinesLeft/allUnprobedCells.size();
                 double bestFringeProb = (double)maxNr/solutions.size();
                 String printstr = "";
@@ -314,15 +335,15 @@ public final class OurStrategy implements Strategy {
 
         int tmpSum;
         boolean partialTest;
-        int unnasigned;
+        int unassigned;
         for(int index=0;index<constraints.size();index++){
             tmpSum=0;
             partialTest=false;
-            unnasigned=0;
+            unassigned=0;
             for(int var:constraints.get(index)){
                 if(vars.get(var)==-1){
                     partialTest=true;
-                    unnasigned++;
+                    unassigned++;
                 }
                 else{
                     tmpSum+=vars.get(var);
@@ -334,7 +355,7 @@ public final class OurStrategy implements Strategy {
             else if(partialTest &&  tmpSum>sum.get(index)){
                 return false;
             }
-            else if( partialTest && tmpSum+unnasigned<sum.get(index)){
+            else if( partialTest && tmpSum+unassigned<sum.get(index)){
                 return false;
             }
         }
@@ -353,7 +374,7 @@ public final class OurStrategy implements Strategy {
             }
         }
 
-        // No corner cell is unprobed, return completely random
+        // No corner cell is unprobed, return completely random cell
         return cellList.get(new Random().nextInt(cellList.size()));
 
     }

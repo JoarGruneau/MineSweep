@@ -256,7 +256,15 @@ public final class OurStrategy implements Strategy {
                 String printstr = "";
                 Cell safestCell;
                 if(randomProb > bestFringeProb){
-                    safestCell = getRandomCell(allUnprobedCells);
+                    // Make random guess outside fringe, prioritize corners
+                    ArrayList<Cell> unprobedNonFringeCells = subtractCells(
+                        allUnprobedCells, fringeCells);
+                    if(unprobedNonFringeCells.size() == 0){
+                        // This should in theory never happpen, but just in case
+                        safestCell = getRandomCell(allUnprobedCells);
+                    }else{
+                        safestCell = getRandomCell(unprobedNonFringeCells);
+                    }
                     printstr = "Guessing RANDOM on ("+safestCell.x+","+safestCell.y+
                     ") with confidence "+randomProb;
                 }else{
@@ -360,6 +368,19 @@ public final class OurStrategy implements Strategy {
             }
         }
         return true;
+    }
+
+    public ArrayList<Cell> subtractCells(ArrayList<Cell> originalList, ArrayList<Cell> subtractList){
+        ArrayList<Cell> returnList = new ArrayList<Cell>(originalList);
+        for(Cell removeCell:subtractList){
+            for(Cell origCell:originalList){
+                if(origCell.equals(removeCell)){
+                    returnList.remove(origCell);
+                    break;
+                }
+            }
+        }
+        return returnList;
     }
 
     public Cell getRandomCell(ArrayList<Cell> cellList){

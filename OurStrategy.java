@@ -71,6 +71,7 @@ public final class OurStrategy implements Strategy {
     @Override    
     public void play(Map m) {
         System.out.println("New game!");
+        System.out.println("Meaningless change so edwin can test github");
         rows = m.rows();
         cols = m.columns();
         // If map has not been probed yet, probe corner piece

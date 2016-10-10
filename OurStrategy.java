@@ -1,6 +1,5 @@
 
 import java.util.*;
-//Testing
 
 
 /* Copyright (C) 1995 John D. Ramsdell

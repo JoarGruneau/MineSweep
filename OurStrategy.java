@@ -76,25 +76,28 @@ public final class OurStrategy implements Strategy {
         if(!m.probed()){
             m.probe(0,0);
         }
-
+        long before = System.nanoTime();
         while(!m.done()){
             probeMap(m);
         }
+
         if(m.won()){
             if(enablePrints){System.out.println("Game won!");}
         }else{
             if(enablePrints){System.out.println("Game lost...");}
         }
+        long after = System.nanoTime();
+        String print= "It took "+(double)(after-before)/1000000000+" seconds to play the game";
+        if(!enablePrints){System.out.println(print);}
         
         
    }
 
     public void probeMap(Map m){
         
-        // NOTE: THIS IS TOTALLY UNTESTED ATM
         // Loop through map, find constraint cells and fringe cells
         // If no consistent solutions, makes a guess.
-        // This should maybe be split into several functions at this point..
+        // This should maybe be split into a separate class with several different methods at this point..
 
         /* Variable descriptions
          - fringeCells and unassignedFringes:

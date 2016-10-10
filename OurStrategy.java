@@ -1,6 +1,6 @@
 
 import java.util.*;
-
+//Testing
 
 
 /* Copyright (C) 1995 John D. Ramsdell
@@ -43,13 +43,6 @@ Boston, MA 02111-1307, USA.
 public final class OurStrategy implements Strategy {
 
     /*  POSSIBLE IMPROVEMENTS
-        - For random guessing: estimate mean nr of mines on fringe and
-        mean nr of mines outside fringe, make better guess with this
-        information. (difficulty uncertain)
-        - Improve cspSolver by taking symmetries into account, so that
-        when a cell far outside the rest of the fringe can give no 
-        information about solutions around it you don't take that
-        constraint into account. (probably difficult)
         - Improve guessing so that you take into account how much
         new information you gain if you guess the correct cell, i.e.
         if the cell is not a mine, how many new solutions will I be
@@ -59,6 +52,13 @@ public final class OurStrategy implements Strategy {
         - Forward checking and all that other stuff in pdf
         (probably not very difficult, but possibly not very useful)
     */
+
+    // SETTINGS BELOW, ENABLE ALL FOR GOOD PERFORMANCE, DISABLE FOR TESTING
+    public boolean prioritizeCorners = true; // Prioritze corners when guessing
+    public boolean consistencyChecking = true; // Consistency checking in cspSolver
+    public boolean ignoreLoneCells = true; // Ignore cells that give no info for constraints
+    public boolean enablePrints = true; // Enable various prints in console
+
 
     public int rows;
     public int cols;
@@ -70,8 +70,7 @@ public final class OurStrategy implements Strategy {
 
     @Override    
     public void play(Map m) {
-        System.out.println("New game!");
-        System.out.println("Meaningless change so edwin can test github");
+        if(enablePrints){System.out.println("New game!");}
         rows = m.rows();
         cols = m.columns();
         // If map has not been probed yet, probe corner piece
@@ -83,9 +82,9 @@ public final class OurStrategy implements Strategy {
             probeMap(m);
         }
         if(m.won()){
-            System.out.println("Game won!");
+            if(enablePrints){System.out.println("Game won!");}
         }else{
-            System.out.println("Game lost...");
+            if(enablePrints){System.out.println("Game lost...");}
         }
         
         
@@ -123,6 +122,8 @@ public final class OurStrategy implements Strategy {
         ArrayList<Integer> constraintSums = new ArrayList<>();
         ArrayList<Cell> allUnprobedCells = new ArrayList<Cell>();
         boolean newFringeCell;
+        int nrMinesLeft = m.mines_minus_marks();
+        boolean cellClearedNearby; // Used to check if a cleared cell can give useful info
 
         for(int x = 0; x<cols; x++){
             for(int y = 0; y<rows; y++){
@@ -146,7 +147,21 @@ public final class OurStrategy implements Strategy {
                 /* If the cell has neighbor mines, find all the neighbor fringe cells
                 and save them. Also save the constraints*/
                 else if(currentCell > 0){
+                
                     unprobedNeighborCells = findNeighborCells(m, x, y, UNPROBED);
+                    markedNeighborCells = findNeighborCells(m, x, y, MARKED);
+
+                    // Check if this cell should be disregarded due to giving no information
+                    if(ignoreLoneCells && currentCell < unprobedNeighborCells.size() + markedNeighborCells.size()){
+                        cellClearedNearby = clearedCellsNearby(m, x, y, 2);
+                        if(!cellClearedNearby){
+                            // We gain no info from this cell, continue to next cell
+                            // But remove nr of mines from the mine count
+                            nrMinesLeft += -(currentCell - markedNeighborCells.size());
+                            continue;
+                        }
+                    }
+
                     // Check each cell if already in fringe list, if not to list
                     for(Cell cell:unprobedNeighborCells){
                         newFringeCell = true;
@@ -163,7 +178,6 @@ public final class OurStrategy implements Strategy {
                     }
                     // Find and add constraints
                     if(unprobedNeighborCells.size() != 0){
-                        markedNeighborCells = findNeighborCells(m, x, y, MARKED);
                         /* If number in cell is greater than the nr of marked neighbors we can
                         add a new constraint*/
                         if(currentCell >= markedNeighborCells.size()){
@@ -195,14 +209,13 @@ public final class OurStrategy implements Strategy {
             and a 3 shows up and you mark all cells around you.*/
             Cell safestCell = getRandomCell(allUnprobedCells);
             m.probe(safestCell.x, safestCell.y);
-            System.out.println("No fringe cells, probing random!");
+            if(enablePrints){System.out.println("No fringe cells, probing random!");}
             return;
         }
 
         /* Now that we have all constraints and fringe cells, call the CSP solver and get
         all possible solutions back
         */
-        int nrMinesLeft = m.mines_minus_marks();
         ArrayList<ArrayList<Integer>> solutions = new ArrayList<ArrayList<Integer>>();
         cspSolver(unassignedFringes, constraints, constraintSums, solutions, 0, 0, nrMinesLeft);
 
@@ -273,7 +286,7 @@ public final class OurStrategy implements Strategy {
                     printstr = "Guessing on ("+safestCell.x+","+safestCell.y+
                     ") with confidence "+bestFringeProb;
                 }
-                System.out.println(printstr);
+                if(enablePrints){System.out.println(printstr);}
                 m.probe(safestCell.x, safestCell.y);
                 return;
             }
@@ -302,6 +315,23 @@ public final class OurStrategy implements Strategy {
         }
         return returnList;
     }
+
+    public boolean clearedCellsNearby(Map m, int x, int y, int distance){
+        int currentCell;
+        for(int xFwd = -distance; xFwd<distance+1; xFwd++){
+            for(int yFwd = -distance; yFwd<distance+1; yFwd++){
+                // Skip own cell
+                if(xFwd == 0 && yFwd == 0){
+                    continue;
+                }
+                currentCell = m.look(x+xFwd,y+yFwd);
+                if(currentCell >= 0){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     
 
     public void cspSolver(ArrayList<Integer> fringeAssignment, 
@@ -322,8 +352,8 @@ public final class OurStrategy implements Strategy {
             nextAssignment = new ArrayList<>(fringeAssignment);
             nextAssignment.set(index, i);
 
-            if(meetsConstraints(nextAssignment, constraints, constraintSums) &&
-                    assignedMines<=nrMinesLeft){
+            if(!consistencyChecking || meetsConstraints(nextAssignment, 
+                constraints, constraintSums) && assignedMines<=nrMinesLeft){
                 // Only go deeper if current assignment does not break constraints
                 cspSolver(nextAssignment, constraints, constraintSums, 
                     solutions, index+1, assignedMines+i, nrMinesLeft);
@@ -386,12 +416,14 @@ public final class OurStrategy implements Strategy {
 
     public Cell getRandomCell(ArrayList<Cell> cellList){
 
-        // Try corners first
-        int[][] cornerCoords = {{0,0},{0,rows-1},{cols-1,0},{cols-1,rows-1}};
-        for(int[] coords:cornerCoords){
-            for(Cell currentCell:cellList){
-                if(currentCell.x == coords[0] && currentCell.y == coords[1]){
-                    return currentCell;
+        if(prioritizeCorners){
+            // Try corners first
+            int[][] cornerCoords = {{0,0},{0,rows-1},{cols-1,0},{cols-1,rows-1}};
+            for(int[] coords:cornerCoords){
+                for(Cell currentCell:cellList){
+                    if(currentCell.x == coords[0] && currentCell.y == coords[1]){
+                        return currentCell;
+                    }
                 }
             }
         }

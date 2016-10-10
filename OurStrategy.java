@@ -53,6 +53,7 @@ public final class OurStrategy implements Strategy {
 
     // SETTINGS BELOW, ENABLE ALL FOR GOOD PERFORMANCE, DISABLE FOR TESTING
     public boolean prioritizeCorners = true; // Prioritze corners when guessing
+    public boolean goodGuessing = true; // Enables our guessing algorithms
     public boolean consistencyChecking = true; // Consistency checking in cspSolver
     public boolean ignoreLoneCells = true; // Ignore cells that give no info for constraints
     public boolean enablePrints = true; // Enable various prints in console
@@ -252,6 +253,11 @@ public final class OurStrategy implements Strategy {
 
         // Nothing was probed or marked, we need to make a guess...
         if(!probedOrMarked){
+            if(!goodGuessing){
+                // All guessing algorithms deactivated
+                Cell guessedCell = getRandomCell(allUnprobedCells);
+                m.probe(guessedCell.x, guessedCell.y);
+            }
             if(solutions.size() != 0){
                 int maxNr = 0;
                 int maxIdx = 0;

@@ -49,6 +49,9 @@ public final class OurStrategy implements Strategy {
         (probably more difficult)
         - Forward checking and all that other stuff in pdf
         (probably not very difficult, but possibly not very useful)
+        - VERY USEFUL IMPROVEMENT: find fringes as clusters and solve
+        the clusters individually. This way clusters that have many
+        solutions but give no information will not impact performance
     */
 
     // SETTINGS BELOW, ENABLE ALL FOR GOOD PERFORMANCE, DISABLE FOR TESTING
@@ -88,7 +91,7 @@ public final class OurStrategy implements Strategy {
         }
         long after = System.nanoTime();
         String print= "It took "+(double)(after-before)/1000000000+" seconds to play the game";
-        if(!enablePrints){System.out.println(print);}
+        if(enablePrints){System.out.println(print);}
         
         
    }

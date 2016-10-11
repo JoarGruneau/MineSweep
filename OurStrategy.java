@@ -65,8 +65,6 @@ public final class OurStrategy implements Strategy {
     public int OUT_OF_BOUNDS = -4;
     public int MARKED = -3;
     public int UNPROBED = -2;
-    public int BOOM = -1;
-    public int FORWARD =3;
 
     @Override    
     public void play(Map m) {
@@ -75,7 +73,7 @@ public final class OurStrategy implements Strategy {
         cols = m.columns();
         // If map has not been probed yet, probe corner piece
         if(!m.probed()){
-            m.probe(0,0);
+            m.probe(20,20);
         }
         long before = System.nanoTime();
         while(!m.done()){
@@ -412,9 +410,8 @@ public final class OurStrategy implements Strategy {
             }
         }
         if(partialTest && forwardChecking){
-                int forward=Math.min(firstUnassigned+ FORWARD, vars.size());
-                for(int i=firstUnassigned;i<forward;i++){
-                    ArrayList<Integer> l=domain(vars,constraints, sum, i);
+                for(int i=firstUnassigned;i<vars.size();i++){
+                    ArrayList<Integer> l=domain(vars,constraints, sum, i, false);
                     if(l.isEmpty()){
                         return false;
                     }
@@ -424,12 +421,12 @@ public final class OurStrategy implements Strategy {
     }    
         public ArrayList<Integer> domain(ArrayList<Integer> assigned, 
             ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> sum, 
-            int index){
+            int index, boolean forward){
         ArrayList<Integer> domainList = new ArrayList();
         ArrayList<Integer> nextAssignment=  new ArrayList<>(assigned);
         for(int i=0; i<2;i++){
             nextAssignment.set(index, i);
-            if(constraintSatisfied(nextAssignment,constraints, sum, false)){
+            if(constraintSatisfied(nextAssignment,constraints, sum, forward)){
                 domainList.add(i);
             }
         } 

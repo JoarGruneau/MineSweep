@@ -69,6 +69,7 @@ public final class OurStrategy implements Strategy {
     public int MARKED = -3;
     public int UNPROBED = -2;
     public int BOOM = -1;
+    public int FORWARD =3;
 
     @Override    
     public void play(Map m) {
@@ -351,7 +352,7 @@ public final class OurStrategy implements Strategy {
 
         // Base case
         if(fringeAssignment.get(fringeAssignment.size()-1) != -1){
-            if(meetsConstraints(fringeAssignment, constraints, constraintSums)){
+            if(constraintSatisfied(fringeAssignment, constraints, constraintSums, false)){
                 solutions.add(fringeAssignment);
             }
             return;
@@ -362,8 +363,8 @@ public final class OurStrategy implements Strategy {
             nextAssignment = new ArrayList<>(fringeAssignment);
             nextAssignment.set(index, i);
 
-            if(!consistencyChecking || meetsConstraints(nextAssignment, 
-                constraints, constraintSums) && assignedMines<=nrMinesLeft){
+            if(constraintSatisfied(nextAssignment, 
+                constraints, constraintSums, true) && assignedMines<=nrMinesLeft){
                 // Only go deeper if current assignment does not break constraints
                 cspSolver(nextAssignment, constraints, constraintSums, 
                     solutions, index+1, assignedMines+i, nrMinesLeft);
@@ -379,20 +380,25 @@ public final class OurStrategy implements Strategy {
  * @param sum ArrayList
  * @return boolean
  */
-    public boolean meetsConstraints(ArrayList<Integer> vars, 
-            ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> sum){
+    public boolean constraintSatisfied(ArrayList<Integer> vars, 
+            ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> sum,
+            boolean forwardChecking){
 
         int tmpSum;
         boolean partialTest;
         int unassigned;
+        partialTest=false;
+        int firstUnassigned=0;
         for(int index=0;index<constraints.size();index++){
             tmpSum=0;
-            partialTest=false;
             unassigned=0;
             for(int var:constraints.get(index)){
                 if(vars.get(var)==-1){
                     partialTest=true;
                     unassigned++;
+                    if(firstUnassigned==0){
+                        firstUnassigned=var;
+                    }
                 }
                 else{
                     tmpSum+=vars.get(var);
@@ -408,8 +414,32 @@ public final class OurStrategy implements Strategy {
                 return false;
             }
         }
+        if(partialTest && forwardChecking){
+                int forward=Math.min(firstUnassigned+ FORWARD, vars.size());
+                for(int i=firstUnassigned;i<forward;i++){
+                    ArrayList<Integer> l=domain(vars,constraints, sum, i);
+                    if(l.isEmpty()){
+                        return false;
+                    }
+                }
+            }
         return true;
+    }    
+        public ArrayList<Integer> domain(ArrayList<Integer> assigned, 
+            ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> sum, 
+            int index){
+        ArrayList<Integer> domainList = new ArrayList();
+        ArrayList<Integer> nextAssignment=  new ArrayList<>(assigned);
+        for(int i=0; i<2;i++){
+            nextAssignment.set(index, i);
+            if(constraintSatisfied(nextAssignment,constraints, sum, false)){
+                domainList.add(i);
+            }
+        } 
+        return domainList;
+        
     }
+
 
     public ArrayList<Cell> subtractCells(ArrayList<Cell> originalList, ArrayList<Cell> subtractList){
         ArrayList<Cell> returnList = new ArrayList<Cell>(originalList);

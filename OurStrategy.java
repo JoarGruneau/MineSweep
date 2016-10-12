@@ -1,83 +1,42 @@
 
 import java.util.*;
 
-/* Copyright (C) 1995 John D. Ramsdell
-
-This file is part of Programmer's Minesweeper (PGMS).
-
-PGMS is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2, or (at your option)
-any later version.
-
-PGMS is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with PGMS; see the file COPYING.  If not, write to
-the Free Software Foundation, 59 Temple Place - Suite 330,
-Boston, MA 02111-1307, USA.
-*/
-
 /**
- * The class SinglePointStrategy implements a PGMS strategy.
- * The Single Point Strategy makes a decision based on information
- * available from a single probed point in the mine map. <p>
- * The strategy looks at a probed point.  If the number of mines
- * near the point equals the number of marks near the point, the
- * strategy infers that near points whose status is unknown do not
- * contain mines.  Similarly, if the number of mines near the point
- * equals the number of marks near the point plus the number of
- * unknowns near, the strategy infers that the near points whose status
- * is unknown contain mines.
- * <p> The implementation makes extensive use of sets.
- * @see Strategy
- * @see set.Set
- * @version October 1995
- * @author John D. Ramsdell
+ *
+ * @author joar
  */
 public final class OurStrategy implements Strategy {
 
-    /*  POSSIBLE IMPROVEMENTS
-        - Improve guessing so that you take into account how much
-        new information you gain if you guess the correct cell, i.e.
-        if the cell is not a mine, how many new solutions will I be
-        able to find? Probably involves making a copy of the map
-        and calling cspSolver again on a the copied map
-        (probably more difficult)
-        - Forward checking and all that other stuff in pdf
-        (probably not very difficult, but possibly not very useful)
-        - VERY USEFUL IMPROVEMENT: find fringes as clusters and solve
-        the clusters individually. This way clusters that have many
-        solutions but give no information will not impact performance
-    */
-
-    // SETTINGS BELOW, ENABLE ALL FOR GOOD PERFORMANCE, DISABLE FOR TESTING
+    /**
+     *Enable all for best performance, disable for testing
+     */
     public boolean prioritizeCorners = true; // Prioritze corners when guessing
-    public boolean goodGuessing = true; // Enables our guessing algorithms
-    public boolean consistencyChecking = true; // Consistency checking in cspSolver
+    public boolean goodGuessing = true; // Enables our guessing algorithm
     public boolean ignoreLoneCells = true; // Ignore cells that give no info for constraints
     public boolean enablePrints = true; // Enable various prints in console
-
-
-    public int rows;
+    public int rows; 
     public int cols;
     public int ALL_CELLS = -5; // Used in the findNeighborCells function
-    public int OUT_OF_BOUNDS = -4;
-    public int MARKED = -3;
-    public int UNPROBED = -2;
-
-    @Override    
-    public void play(Map m) {
+    public int OUT_OF_BOUNDS = -4; // value in a cell is out of bound
+    public int MARKED = -3; // if cell is marked as mine
+    public int UNPROBED = -2; // if cell is unbrobed
+    
+    
+    /**
+   * solves the map.
+   * @param m	Map
+   */
+    @Override  
+    public void play(Map m){
         if(enablePrints){System.out.println("New game!");}
         rows = m.rows();
         cols = m.columns();
+        
         // If map has not been probed yet, probe corner piece
         if(!m.probed()){
             m.probe(20,20);
         }
+        
         long before = System.nanoTime();
         while(!m.done()){
             probeMap(m);
@@ -94,26 +53,11 @@ public final class OurStrategy implements Strategy {
         
         
    }
-
+    /**
+   * Probes and marks all sure cells, otherwise it guesses.
+   * @param m	Map
+   */
     public void probeMap(Map m){
-        
-        // Loop through map, find constraint cells and fringe cells
-        // If no consistent solutions, makes a guess.
-        // This should maybe be split into a separate class with several different methods at this point..
-
-        /* Variable descriptions
-         - fringeCells and unassignedFringes:
-        The indices of the fringe cells correspond to the indices of
-        the unassigned fringe cells
-         - constraints and constraintSums:
-        Each array in constraints is a constraint. Each element in 
-        each constraint array is an index corresponding to the index in the
-        fringe cells array. 
-        The index of each constraint corresponds to the index of each sum 
-        in the constraintSums array.
-         - allUnprobedCells:
-        Array containing all unprobed cells. Used to make good guesses.
-        */
 
 
         int currentCell;
@@ -284,7 +228,7 @@ public final class OurStrategy implements Strategy {
                         allUnprobedCells, fringeCells);
                     if(unprobedNonFringeCells.size() == 0){
                         // This should in theory never happpen, but just in case
-                        safestCell = getRandomCell(allUnprobedCells);
+                        safestCell = fringeCells.get(maxIdx);
                     }else{
                         safestCell = getRandomCell(unprobedNonFringeCells);
                     }
@@ -304,6 +248,14 @@ public final class OurStrategy implements Strategy {
 
     }
 
+    /**
+     *Finds neighbor cells of a given type
+     * @param m Map 
+     * @param x position x
+     * @param y position y
+     * @param cellType finds neighbor cells of this cell type
+     * @return the neighbor cells of a given cell type
+     */
     public ArrayList<Cell> findNeighborCells(Map m, int x, int y, int cellType){
         /* Returns an arraylist of all cells of type cellType neighboring the cell
         at location (x,y). if cellType == ALL_CELLS it returns all neighbors
@@ -325,6 +277,14 @@ public final class OurStrategy implements Strategy {
         return returnList;
     }
 
+    /**
+     *finds if there are cleared cells nearby at a given distance
+     * @param m Map
+     * @param x index int
+     * @param y index int 
+     * @param distance at given distance
+     * @return boolean
+     */
     public boolean clearedCellsNearby(Map m, int x, int y, int distance){
         int currentCell;
         for(int xFwd = -distance; xFwd<distance+1; xFwd++){
@@ -342,7 +302,16 @@ public final class OurStrategy implements Strategy {
         return false;
     }
     
-
+   /**
+ * Loops finds all possible solutions and stores them in a solution Array list  
+ * @param fringeAssignment as ArrayList Integer
+ * @param constraints  as ArrayList ArrayList Integer
+ * @param constraintSums ArrayList Integer 
+     * @param solutions the solution ArrayList
+ * @param index index for next assignment
+     * @param assignedMines number of assigned mines
+     * @param nrMinesLeft mines left to assign
+ */
     public void cspSolver(ArrayList<Integer> fringeAssignment, 
             ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> constraintSums, 
             ArrayList<ArrayList<Integer>> solutions, int index, int assignedMines, 
@@ -376,6 +345,7 @@ public final class OurStrategy implements Strategy {
  * @param vars as ArrayList
  * @param constraints ArrayList
  * @param sum ArrayList
+     * @param forwardChecking
  * @return boolean
  */
     public boolean constraintSatisfied(ArrayList<Integer> vars, 
@@ -421,7 +391,16 @@ public final class OurStrategy implements Strategy {
                 }
             }
         return true;
-    }    
+    } 
+   /**
+   * Get domain.
+   * @param assigned	assigned fringe cells
+   * @param constraints        constraints
+   * @param sum     sum for constraints
+   * @param index index for var to check domain
+   * @param forward boolean, forward checking wanted
+   * @return domainList 
+   */
         public ArrayList<Integer> domain(ArrayList<Integer> assigned, 
             ArrayList<ArrayList<Integer>> constraints, ArrayList<Integer> sum, 
             int index, boolean forward){
@@ -437,7 +416,12 @@ public final class OurStrategy implements Strategy {
         
     }
 
-
+    /**
+     *
+     * @param originalList the original cells as a ArrayList of cells
+     * @param subtractList the cells you want to subtract from the original cells
+     * @return the subtracted ArrayList
+     */
     public ArrayList<Cell> subtractCells(ArrayList<Cell> originalList, ArrayList<Cell> subtractList){
         ArrayList<Cell> returnList = new ArrayList<Cell>(originalList);
         for(Cell removeCell:subtractList){
@@ -451,6 +435,11 @@ public final class OurStrategy implements Strategy {
         return returnList;
     }
 
+    /**
+     *
+     * @param cellList get random cell from ArrayList
+     * @return random cell
+     */
     public Cell getRandomCell(ArrayList<Cell> cellList){
 
         if(prioritizeCorners){
